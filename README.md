@@ -17,6 +17,8 @@ Must be running Python 3.5+
 
   Win
   `copy env/template .env`
+  
+- Fill in all values in `.env` with your personal environment
 
 ## How to use
 run `python cli.py csv -h` to see all options
