@@ -16,7 +16,7 @@ Must be running Python 3.5+
   `cp env/template .env`
 
   Win
-  `copy env/template .env`
+  `copy env\template .env`
   
 - Fill in all values in `.env` with your personal environment
 
