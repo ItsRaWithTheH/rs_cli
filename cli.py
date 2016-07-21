@@ -23,7 +23,7 @@ else:
   load_dotenv(dotenv_path)
 
 HELP_STRING = """To run, call 'python cli.py'
-  followed by an input file (csv) and a table name"""
+  followed by an input file other options"""
 
 def verify_aws_config(aws_config, command_name):
   """Verify the aws configuration has the proper parameters"""
@@ -44,39 +44,12 @@ def verify_db_config(db_config):
 
 #access AWS credentials by reading from .env file
 parser = argparse.ArgumentParser(description='Pass data from CSV to Redshift')
-parser.add_argument('action', type=str, help=HELP_STRING)
-parser.add_argument('--db_user', type=str, default=os.environ.get('DATABASE_USR'),
-                    help='database user')
-parser.add_argument('--input', type=str, required=True, help='csv file to upload to redshift')
+parser.add_argument('input', type=str, required=True, help='file or directory to upload to redshift')
 parser.add_argument('--table_name', type=str, required=True, help='destination table name')
-parser.add_argument('--db_pwd', type=str, default=os.environ.get('DATABASE_PWD'),
-                    help='database password')
-parser.add_argument('--db_host', type=str, default=os.environ.get('DATABASE_HOST'),
-                    help='database host')
-parser.add_argument('--db_port', type=str, default=os.environ.get('DATABASE_PORT'),
-                    help='database port')
-parser.add_argument('--db_name', type=str, default=os.environ.get('DATABASE_NAME'),
-                    help='database name')
-parser.add_argument('--db_dest', type=str, default=os.environ.get('DATABASE_DESTINATION'),
-                    help='the destination database type (mssql, oracle, postgres...)')
-parser.add_argument('--db_dialect_driver', type=str, default=os.environ.get('DATABASE_DIALECT_DRIVER'),
-                    help='specifies database conn dialect and driver')
-parser.add_argument('--access', type=str, default=os.environ.get('AWS_ACCESS_KEY_ID'),
-                    help='aws public access key')
-parser.add_argument('--secret', type=str, default=os.environ.get('AWS_SECRET_ACCESS_KEY'),
-                    help='aws secret access key')
-parser.add_argument('--dry_run', action='store_true', default=False,
-                    help='execute calculation without writing to production DB (default -> False)')
-parser.add_argument('--s3bucket', type=str, default=os.environ.get('S3_BUCKET'),
-                    help='Name of the s3 bucket to use for this environment.')
-parser.add_argument('--awsRegion', type=str, default=os.environ.get('AWS_DEFAULT_REGION'),
-                    help='aws region to run calculation in. Default ["us-east-1"]')
-parser.add_argument('--slack_web_hook', type=str, default=os.environ.get('SLACK_WEB_HOOK'),
-                    help='the Slack url to send log message to')
-parser.add_argument('--enable_slack', action='store_true', default=False,
-                    help='enable slack notification (default --> False)')
 parser.add_argument('--schema', type=str, default=os.environ.get('DATABASE_SCHEMA'),
                     help='the schema where tables should upload to')
+parser.add_argument('--delimeter', type=str, default=',', help='delimeter to use')
+parser.add_argument('--prefix', type=str, help='prefix for files when path is a directory')
 
 args = parser.parse_args()
 
@@ -98,18 +71,12 @@ aws_config = {
 
 verify_db_config(db_config)
 
-if args.action == 'csv':
-  verify_aws_config(aws_config, 'csv')
-  filePath = os.path.abspath(args.input)
-  createQuery = query_script.get_query_from_csv(filePath, args.table_name)
-  df = query_script.get_df_from_csv(filePath)
-  print(df)
-  # df = cliTools.load_csv_to_df(filePath)
-  # cliTools.get_create_table(df)
-  db.upload_dataframe_to_s3(aws_config, df, args.table_name)
-  db.copy_from_s3_to_redshift(db_config, aws_config, args.table_name, args.table_name, createQuery)
+# initial error checking
+if (args.input IS NONE):
+  raise;
 
-
-else:
-  raise RuntimeError("Invalid action specified to commandline.")
+# Call read package function using the file path, return create table string
+# Call write package run query with the create table string
+# Next call write package function to upload to s3 given the filepath, return the path(s) on s3
+# Foreach s3 path, call write package function to run a COPY statement on redshift
 
