@@ -47,7 +47,7 @@ def get_column_datatype(cell):
                 and potential_day in range(1,31):
                     return True             
         #Format Two check
-        if len(s)==9:
+        if len(s)==9 and s[5:].isdigit():
             potential_year2 = int(s[5:].lstrip('0'))
             potential_day2 = int(s[:2].lstrip('0'))
             #checking if 3 letters in the middle of the string represent a valid month

@@ -11,28 +11,34 @@ import sys
 import query_script
 import redshift as db
 import pandas as pd
-import script as cliTools
 
+from read import read
+from write import write
+
+def find(name, path):
+    for root, dirs, files in os.walk(path):
+        if name in files:
+            return os.path.join(root, name)
 
 # loads dotenv
-dotenv_path = join(dirname(__file__), '.env')
+dotenv_path = find('.env', '/Users/')
 if os.path.exists(dotenv_path) == False:
   print('Cannot locate .env file using path --> {}'.format(dotenv_path), file=sys.stderr)
-  sys.exit(1)
+  sys.exit(1) 
 else:
   load_dotenv(dotenv_path)
 
 HELP_STRING = """To run, call 'python cli.py'
   followed by an input file other options"""
 
-def verify_aws_config(aws_config, command_name):
+def verify_aws_config(aws_config):
   """Verify the aws configuration has the proper parameters"""
   if aws_config['s3_bucket'] is None:
-    raise RuntimeError('must supply s3bucket arg to run {cmd} command.'.format(cmd=command_name))
+    raise RuntimeError('must supply s3bucket arg to run {cmd} command.')
   if aws_config['aws_access_key_id'] is None:
-    raise RuntimeError('must supply access arg to run {cmd} command.'.format(cmd=command_name))
+    raise RuntimeError('must supply access arg to run {cmd} command.'.format)
   if aws_config['aws_secret_access_key'] is None:
-    raise RuntimeError('must supply secret arg to run {cmd} command.'.format(cmd=command_name))
+    raise RuntimeError('must supply secret arg to run {cmd} command.'.format)
   return
 
 def verify_db_config(db_config):
@@ -44,36 +50,53 @@ def verify_db_config(db_config):
 
 #access AWS credentials by reading from .env file
 parser = argparse.ArgumentParser(description='Pass data from CSV to Redshift')
-parser.add_argument('input', type=str, required=True, help='file or directory to upload to redshift')
+parser.add_argument('input', type=str, help='file or directory to upload to redshift')
 parser.add_argument('--table_name', type=str, required=True, help='destination table name')
 parser.add_argument('--schema', type=str, default=os.environ.get('DATABASE_SCHEMA'),
                     help='the schema where tables should upload to')
-parser.add_argument('--delimeter', type=str, default=',', help='delimeter to use')
-parser.add_argument('--prefix', type=str, help='prefix for files when path is a directory')
+parser.add_argument('--delimiter', type=str, default=',', help='delimeter to use')
+parser.add_argument('--prefix', type=str, required=True, \
+  help="""prefix for files when path is a directory. If only looking for one file
+  please just pass a valid prefix (could just be the first couple letters of the file
+  name that specifies that file in the directory) for that file""")
 
 args = parser.parse_args()
 
 
 db_config = {
-    'dbname': args.db_name,
-    'user': args.db_user,
-    'pwd': args.db_pwd,
-    'host': args.db_host,
-    'port': args.db_port,
-    'dialect_and_driver': args.db_dialect_driver
+    'dbname': os.environ.get('DATABASE_NAME'),
+    'user': os.environ.get('DATABASE_USR'),
+    'pwd': os.environ.get('DATABASE_PWD'),
+    'host': os.environ.get('DATABASE_HOST'),
+    'port': os.environ.get('DATABASE_PORT'),
+    'dialect_and_driver': os.environ.get('DATABASE_DIALECT_DRIVER')
 }
 aws_config = {
-    'aws_access_key_id': args.access,
-    'aws_secret_access_key': args.secret,
-    'aws_default_region': args.awsRegion,
-    's3_bucket': args.s3bucket
+    'aws_access_key_id': os.environ.get('AWS_ACCESS_KEY_ID'),
+    'aws_secret_access_key': os.environ.get('AWS_SECRET_ACCESS_KEY'),
+    'aws_default_region': os.environ.get('AWS_DEFAULT_REGION'),
+    's3_bucket': os.environ.get('S3_BUCKET')
 }
 
 verify_db_config(db_config)
 
 # initial error checking
-if (args.input IS NONE):
-  raise;
+if (args.input == None):
+  raise RuntimeError("Invalid argument passed into commandline.")
+else:
+  verify_aws_config(aws_config)
+  #argFilePath = os.path.abspath(args.input)
+  argFilePath = args.input
+  argPrefix = args.prefix
+  argDelim = args.delimiter
+  argSchema = args.schema
+  argTablename = args.table_name
+
+  create_sql_query = read.readFromPath(argFilePath, argPrefix, argDelim, argSchema, argTablename)
+  df = read.getDfFromListOfCsvs(argFilePath, argPrefix, argDelim)
+  write.upload_dataframe_to_s3(aws_config, df, argSchema + "." + argTablename)
+  write.copy_from_s3_to_redshift(db_config, aws_config, argSchema + "." + argTablename, argSchema + "." + argTablename, create_sql_query)
+
 
 # Call read package function using the file path, return create table string
 # Call write package run query with the create table string
