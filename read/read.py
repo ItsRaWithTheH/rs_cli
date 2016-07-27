@@ -170,13 +170,4 @@ def get_column_datatype(cell):
 
   # strip of all white space before anf after the string
   cell = cell.strip(' ')
-  if _isdate(cell):
-    return 'DATE'
-  elif _isint(cell):
-    return 'REAL'
-  elif _isfloat(cell):
-    return 'REAL'
-  elif _isbool(cell):
-    return 'BOOLEAN'
-  else:
-    return 'VARCHAR(256)'
+  return 'VARCHAR(256)'
