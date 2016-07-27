@@ -44,11 +44,8 @@ def readFromPath (path, delimeter, prefix, schema, tablename):
 def _readFile(filePath, delim, guessed_encoding):
   with open(filePath, encoding=guessed_encoding) as infile:
     rows = csv.reader(infile, delimiter=delim)
-    print(rows)
     readData = list()
     maxRows = 500
-    # headers = next(rows)
-    # print(headers)
     for i, element in enumerate(rows):
       if i < maxRows:
         readData.append(element)
@@ -77,10 +74,6 @@ def _bestGuessEncoding(filePath):
 
 def _getQuery (readData, schema, tablename):
   headers = readData.pop(0)
-  print(headers)
-  print(readData)
-  print(get_column_datatype(readData[0][0]))
-
   tableDef = list()
   for header in headers:
     tableDef.append({
@@ -170,4 +163,13 @@ def get_column_datatype(cell):
 
   # strip of all white space before anf after the string
   cell = cell.strip(' ')
-  return 'VARCHAR(256)'
+  if _isdate(cell):
+    return 'DATE'
+  elif _isint(cell):
+    return 'REAL'
+  elif _isfloat(cell):
+    return 'REAL'
+  elif _isbool(cell):
+    return 'BOOLEAN'
+  else:
+    return 'VARCHAR(256)'
