@@ -173,7 +173,7 @@ def get_column_datatype(cell):
   if _isdate(cell):
     return 'DATE'
   elif _isint(cell):
-    return 'BIGINT'
+    return 'REAL'
   elif _isfloat(cell):
     return 'REAL'
   elif _isbool(cell):
