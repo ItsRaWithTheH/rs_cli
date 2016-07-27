@@ -15,6 +15,8 @@ import os
 from chardet.universaldetector import UniversalDetector
 import csv
 import collections
+import re
+
 def readFromPath (path, delimeter, prefix, schema, tablename):
   #Check if it is directory
   if os.path.isdir(path):
@@ -112,8 +114,17 @@ def get_column_datatype(cell):
 
   # subfunction checking if a cell is a float or not
   def _isfloat(s):
+    if re.search('.*E0.*', s) is not None:
+      return False
     try:
       float(s)
+      return True
+    except ValueError:
+      return False
+
+  def _isint(s):
+    try:
+      int(s)
       return True
     except ValueError:
       return False
@@ -160,12 +171,12 @@ def get_column_datatype(cell):
   # strip of all white space before anf after the string
   cell = cell.strip(' ')
   if _isdate(cell):
-    return 'date'
-  elif cell.isdigit():
-    return 'integer'
+    return 'DATE'
+  elif _isint(cell):
+    return 'BIGINT'
   elif _isfloat(cell):
-    return 'real'
+    return 'REAL'
   elif _isbool(cell):
-    return 'bool'
+    return 'BOOLEAN'
   else:
-    return 'varchar(256)'
+    return 'VARCHAR(256)'
