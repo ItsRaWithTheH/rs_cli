@@ -23,7 +23,8 @@ class ProgressPercentage(object):
               "\r%s  %s / %s  (%.2f%%)" % (
                   self._filename, self._seen_so_far, self._size,
                   percentage))
-          sys.stdout.flush()
+          if percentage != 100:
+              sys.stdout.flush()
 
 def find(name, path):
   for root, dirs, files in os.walk(path):

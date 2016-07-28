@@ -1,8 +1,8 @@
 # Function readFromPath
 # Checks if path is a file or directory
-# If directory, finds first file in directory with matching prefix, error if no prefix
+# If directory, finds first file in directory with matching prefix, RuntimeError if no prefix
 # First file found or if path is a file
-#   Do best guess encoding, otherwise raise error use chardet library
+#   Do best guess encoding, otherwise raise RuntimeError use chardet library
 #   Read first 500 lines from file using delim argument, filepath, and encoding
 #   Foreach column
 #     Find first value
@@ -19,32 +19,32 @@ import re
 
 def readFromPath (path, delimeter, prefix, schema, tablename):
   #Check if it is directory
-  if os.path.isdir(path):
+  absolutePath = os.path.abspath(os.path.expanduser(path))
+  if os.path.isdir(absolutePath):
     if prefix is None:
-      raise Error("must specify a prefix if passing in a directory")
+      raise RuntimeError("must specify a prefix if passing in a directory")
 
     for file in os.listdir(path):
       if file.startswith(prefix) and ('.txt' or '.csv' in file):
-        absolutePath = os.path.abspath(path) + '/' + file
-        #guessed_encoding = _bestGuessEncoding(absolutePath)
+        absolutePath = absolutePath + '/' + file
         break
     else:
-      raise Error("No files found with prefix")
-  elif os.path.exists(path):
-    absolutePath = os.path.abspath(path)
-    #guessed_encoding = _bestGuessEncoding(absolutePath)
+      raise RuntimeError("No files found with prefix")
+  elif not os.path.exists(absolutePath):
+    raise RuntimeError("File not Found")
   if absolutePath is not None:
-    dataHead = _readFile(absolutePath, delimeter, 'utf-8')
+    # guessed_encoding = _bestGuessEncoding(absolutePath)
+    dataHead = _readFile(absolutePath, delimeter)
     return _getQuery(dataHead, schema, tablename)
   else:
-    raise Error("File not found")
+    raise RuntimeError("Unknown Error")
 
 
 
-def _readFile(filePath, delim, guessed_encoding):
+def _readFile(filePath, delim, guessed_encoding=None):
   with open(filePath, encoding=guessed_encoding) as infile:
     dialect = csv.Sniffer().sniff(infile.read(1024))
-    rows = csv.reader(infile, dialect, delimiter=delim)
+    rows = csv.reader(infile, delimiter=delim)
     print(rows)
     readData = list()
     maxRows = 500
@@ -72,7 +72,7 @@ def _bestGuessEncoding(filePath):
   encoding = detector.result['encoding']
 
   if confidence < 0.75:
-    raise Error("Encoding looks a little strange. Confidence is below 75%. Make changes to file")
+    raise RuntimeError("Encoding looks a little strange. Confidence is below 75%. Make changes to file")
 
   return encoding
 

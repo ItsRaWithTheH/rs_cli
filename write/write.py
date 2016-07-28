@@ -29,6 +29,26 @@ REDSHIFT_COPY_CSV = """COPY {schema}.{tablename}
   IGNOREHEADER AS 1
   dateformat AS 'auto';"""
 
+class ProgressPercentage(object):
+  def __init__(self, filename):
+      self._filename = filename
+      self._size = float(os.path.getsize(filename))
+      self._seen_so_far = 0
+      self._lock = threading.Lock()
+
+  def __call__(self, bytes_amount):
+      # To simplify we'll assume this is hooked up
+      # to a single filename.
+      with self._lock:
+          self._seen_so_far += bytes_amount
+          percentage = (self._seen_so_far / self._size) * 100
+          sys.stdout.write(
+              "\r%s  %s / %s  (%.2f%%)" % (
+                  self._filename, self._seen_so_far, self._size,
+                  percentage))
+          if percentage != 100:
+              sys.stdout.flush()
+
 def executeSQL(query, db_config):
   conn = db.create_sql_conn(db_config)
   cursor = conn.cursor()
@@ -73,11 +93,11 @@ def uploadToS3(path, prefix, aws_config, tablename):
     for file in os.listdir(path):
       if file.startswith(prefix) and ('.txt' or '.csv' in file):
         absolutePath = os.path.abspath(path) + '/' + file
-        s3_client.upload_file(absolutePath, aws_config["s3_bucket"], tablename + '_' + str(i))
+        s3_client.upload_file(absolutePath, aws_config["s3_bucket"], tablename + '_' + str(i), None, ProgressPercentage(filePath))
         upload.append('s3://{bucket}/{path}'.format(bucket=aws_config["s3_bucket"], path=tablename + '_' + str(i)))
         i = i + 1
   elif os.path.exists(filePath):
-    s3_client.upload_file(filePath, aws_config["s3_bucket"], tablename+'_0')
+    s3_client.upload_file(filePath, aws_config["s3_bucket"], tablename+'_0', None, ProgressPercentage(filePath))
     upload.append('s3://{bucket}/{path}'.format(bucket=aws_config["s3_bucket"], path=tablename + '_0'))
 
   else:
