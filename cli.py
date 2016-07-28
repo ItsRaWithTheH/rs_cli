@@ -17,7 +17,7 @@ def find(name, path):
       return os.path.join(root, name)
 #
 # loads dotenv
-dotenv_path = find('.env', '/Users/rmahida/Projects/personal/rs_cli')
+dotenv_path = os.path.abspath('./.env')
 if os.path.exists(dotenv_path) == False:
   print('Cannot locate .env file using path --> {}'.format(dotenv_path), file=sys.stderr)
   sys.exit(1)

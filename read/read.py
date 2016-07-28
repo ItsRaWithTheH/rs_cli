@@ -26,15 +26,15 @@ def readFromPath (path, delimeter, prefix, schema, tablename):
     for file in os.listdir(path):
       if file.startswith(prefix) and ('.txt' or '.csv' in file):
         absolutePath = os.path.abspath(path) + '/' + file
-        guessed_encoding = _bestGuessEncoding(absolutePath)
+        #guessed_encoding = _bestGuessEncoding(absolutePath)
         break
     else:
       raise Error("No files found with prefix")
   elif os.path.exists(path):
     absolutePath = os.path.abspath(path)
-    guessed_encoding = _bestGuessEncoding(absolutePath)
+    #guessed_encoding = _bestGuessEncoding(absolutePath)
   if absolutePath is not None:
-    dataHead = _readFile(absolutePath, delimeter, guessed_encoding)
+    dataHead = _readFile(absolutePath, delimeter, 'utf-8')
     return _getQuery(dataHead, schema, tablename)
   else:
     raise Error("File not found")
@@ -43,7 +43,8 @@ def readFromPath (path, delimeter, prefix, schema, tablename):
 
 def _readFile(filePath, delim, guessed_encoding):
   with open(filePath, encoding=guessed_encoding) as infile:
-    rows = csv.reader(infile, delimiter=delim)
+    dialect = csv.Sniffer().sniff(infile.read(1024))
+    rows = csv.reader(infile, dialect, delimiter=delim)
     print(rows)
     readData = list()
     maxRows = 500
@@ -77,9 +78,6 @@ def _bestGuessEncoding(filePath):
 
 def _getQuery (readData, schema, tablename):
   headers = readData.pop(0)
-  print(headers)
-  print(readData)
-  print(get_column_datatype(readData[0][0]))
 
   tableDef = list()
   for header in headers:
@@ -144,12 +142,12 @@ def get_column_datatype(cell):
   #      Format One: 8 digits, where the first 4
   #          digits represent year, then next 2 digits represent month, and
   #          final two digits represent day
-  #      Format Two: 2 digits for day of the month followed by
+  #      Format Two: 2 digits for day of the day followed by
   #          string of 3 letters representing month (first 3 letters of month name)
   #          followed by 4 digits for year
   def _isdate(s):
     # Format One check
-    if s.isdigit() and len(s) == 8:
+    if _isint(s) and len(s) == 8:
       potential_year = int(s[:4].lstrip('0'))
       potential_month = int(s[4:6].lstrip('0'))
       potential_day = int(s[6:].lstrip('0'))
@@ -157,7 +155,7 @@ def get_column_datatype(cell):
           and potential_day in range(1, 31):
         return True
         # Format Two check
-    if len(s) == 9 and s[5:].isdigit():
+    if len(s) == 9 and re.search('\d{2}[a-zA-z]{3}\d{4}', s) is not None:
       potential_year2 = int(s[5:].lstrip('0'))
       potential_day2 = int(s[:2].lstrip('0'))
       # checking if 3 letters in the middle of the string represent a valid month

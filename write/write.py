@@ -23,6 +23,8 @@ import redshift as db
 REDSHIFT_COPY_CSV = """COPY {schema}.{tablename}
   FROM '{s3Path}'
   credentials 'aws_access_key_id={access_key_id};aws_secret_access_key={secret_access_key}'
+  EMPTYASNULL
+  FILLRECORD
   CSV
   IGNOREHEADER AS 1
   dateformat AS 'auto';"""
