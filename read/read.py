@@ -43,7 +43,7 @@ def readFromPath (path, delimeter, prefix, schema, tablename):
 
 def _readFile(filePath, delim, guessed_encoding=None):
   with open(filePath, encoding=guessed_encoding) as infile:
-    dialect = csv.Sniffer().sniff(infile.read(1024))
+    # dialect = csv.Sniffer().sniff(infile.read(1024))
     rows = csv.reader(infile, delimiter=delim)
     print(rows)
     readData = list()
@@ -85,7 +85,7 @@ def _getQuery (readData, schema, tablename):
       "name": header,
       "type": None
     })
-
+  print(len(tableDef))
   for i in range(0, len(readData)):
     row = readData[i]
     for j in range(0, len(row)):
@@ -168,13 +168,13 @@ def get_column_datatype(cell):
 
   # strip of all white space before anf after the string
   cell = cell.strip(' ')
-  if _isdate(cell):
-    return 'DATE'
-  elif _isint(cell):
-    return 'REAL'
-  elif _isfloat(cell):
-    return 'REAL'
-  elif _isbool(cell):
-    return 'BOOLEAN'
-  else:
-    return 'VARCHAR(256)'
+  # if _isdate(cell):
+  #   return 'DATE'
+  # elif _isint(cell):
+  #   return 'REAL'
+  # elif _isfloat(cell):
+  #   return 'REAL'
+  # elif _isbool(cell):
+  #   return 'BOOLEAN'
+  # else:
+  return 'VARCHAR(256)'

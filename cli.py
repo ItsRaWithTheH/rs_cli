@@ -85,10 +85,13 @@ else:
   # Call write package run query with the create table string
   if createQuery is None:
     raise Error("oops")
+  if createQuery == '':
+    raise Error("oops")
+  print(createQuery)
   createTable = write.executeSQL(createQuery, db_config)
   # Next call write package function to upload to s3 given the filepath, return the path(s) on s3
   uploadFiles = write.uploadToS3(args.input, args.prefix, aws_config, args.table_name)
   # Foreach s3 path, call write package function to run a COPY statement on redshift
   for s3Path in uploadFiles:
-    write.loadDB(s3Path, db_config, aws_config, args.table_name, args.schema)
+    write.loadDB(s3Path, db_config, aws_config, args.table_name, args.schema, args.delimiter)
 

@@ -19,6 +19,8 @@
 import boto3
 import os
 import redshift as db
+import sys
+import threading
 
 REDSHIFT_COPY_CSV = """COPY {schema}.{tablename}
   FROM '{s3Path}'
@@ -26,6 +28,7 @@ REDSHIFT_COPY_CSV = """COPY {schema}.{tablename}
   EMPTYASNULL
   FILLRECORD
   CSV
+  DELIMITER AS '{delimiter}'
   IGNOREHEADER AS 1
   dateformat AS 'auto';"""
 
@@ -58,7 +61,7 @@ def executeSQL(query, db_config):
   conn.close()
   return result
 
-def loadDB(s3Path, db_config, aws_config, tablename, schema):
+def loadDB(s3Path, db_config, aws_config, tablename, schema, delim=','):
   conn = db.create_sql_conn(db_config)
   cursor = conn.cursor()
 
@@ -68,6 +71,7 @@ def loadDB(s3Path, db_config, aws_config, tablename, schema):
     s3Path=s3Path,
     access_key_id=aws_config['aws_access_key_id'],
     secret_access_key=aws_config['aws_secret_access_key'],
+    delimiter=delim
   )
 
   cursor.execute(copy_statement)
