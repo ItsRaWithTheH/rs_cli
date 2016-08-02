@@ -17,7 +17,7 @@ import csv
 import collections
 import re
 
-def readFromPath (path, delimeter, prefix, schema, tablename):
+def readFromPath (path, delimeter, prefix):
   #Check if it is directory
   absolutePath = os.path.abspath(os.path.expanduser(path))
   if os.path.isdir(absolutePath):
@@ -35,10 +35,21 @@ def readFromPath (path, delimeter, prefix, schema, tablename):
   if absolutePath is not None:
     # guessed_encoding = _bestGuessEncoding(absolutePath)
     dataHead = _readFile(absolutePath, delimeter)
-    return _getQuery(dataHead, schema, tablename)
+    tableDef = _getTableDef(dataHead)
+    col_names_list = list()
+    rs_dtypes_list = list()
+    for i in tableDef:
+      col_names_list.append(i['name'])
+      rs_dtypes_list.append(i['type'])
+    return col_names_list, rs_dtypes_list
   else:
     raise RuntimeError("Unknown Error")
 
+
+def getQuery(names_and_types_list, schema, tablename):
+  createStr = 'CREATE TABLE IF NOT EXISTS {schema}.{tablename} ('.format(schema=schema, tablename=tablename) \
+    + ','.join(names_and_types_list) + ');'
+  return createStr;
 
 
 def _readFile(filePath, delim, guessed_encoding=None):
@@ -73,7 +84,15 @@ def _bestGuessEncoding(filePath):
 
   return encoding
 
-def _getQuery (readData, schema, tablename):
+def _getTableDef (readData):
+  """
+  Output should look like this:
+  [{'name': 'head1', 'type': 'VARCHAR(256)'},
+  {'name': 'head2', 'type': 'REAL'},
+  {'name': 'head3', 'type': 'REAL'},
+  {'name': 'head4', 'type': 'DATE'}]
+  """
+
   headers = readData.pop(0)
 
   tableDef = list()
@@ -91,12 +110,7 @@ def _getQuery (readData, schema, tablename):
       if columnDef['type'] is None:
         columnDef['type'] = get_column_datatype(cell)
 
-  createStr = 'CREATE TABLE IF NOT EXISTS {schema}.{tablename} ('.format(schema=schema, tablename=tablename)
-  for column in tableDef:
-    createStr += '\n{name} {type},'.format(name=column['name'], type=column['type'])
-  createStr = createStr.rstrip(',')
-  createStr +=  '\n);'
-  return createStr;
+  return tableDef
 
 
 def get_column_datatype(cell):

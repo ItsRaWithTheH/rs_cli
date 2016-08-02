@@ -10,10 +10,10 @@ def get_rs_dtypes(xlsx_file):
   and that the user has manually written in datatypes for the column names whose rs datatypes
   were guessed incorrectly
 
-  Output is a OrderedDict where the keys are the column names and the value for each key is its respective datatype
+  Output should be a list of strings (each string is 'column_name redshift_datatype')
   """
 
-  records = pe.get_records(file_name = xlsx_file)
+  records = pe.get_records(file_name = xlsx_file+".xlsx")
   column_names_list = list()
   datatypes_list = list()
   for record in records:
@@ -22,11 +22,13 @@ def get_rs_dtypes(xlsx_file):
         datatypes_list.append('VARCHAR(256)')
     else:
         datatypes_list.append(record['User Input Datatype'])
-  colname_datatype_ordered_dict = collections.OrderedDict.fromkeys(column_names_list)
-  for i in range(0, len(datatypes_list)):
-        colname_datatype_ordered_dict[column_names_list[i]] = datatypes_list[i] 
 
-  return colname_datatype_ordered_dict
+    names_and_types_list = list()
+    for i in range(0, len(datatypes_list)):
+      names_and_types_list.append(column_names_list[i] + " " + datatypes_list[i])
+
+  return names_and_types_list
+
 
 
 

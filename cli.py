@@ -10,6 +10,8 @@ import sys
 
 from read import read
 from write import write
+import write_to_spreadsheet
+import read_spreadsheet_get_rs_dtypes
 
 def find(name, path):
   for root, dirs, files in os.walk(path):
@@ -17,7 +19,7 @@ def find(name, path):
       return os.path.join(root, name)
 #
 # loads dotenv
-dotenv_path = os.path.abspath('./.env')
+dotenv_path = '/Users/jlee/Desktop/cota/projects/metathesis/.env'
 if os.path.exists(dotenv_path) == False:
   print('Cannot locate .env file using path --> {}'.format(dotenv_path), file=sys.stderr)
   sys.exit(1)
@@ -46,8 +48,10 @@ def verify_db_config(db_config):
 
 #access AWS credentials by reading from .env file
 parser = argparse.ArgumentParser(description='Pass data from CSV to Redshift')
+parser.add_argument('action', type=str, help='either "create_excel" or "load_excel')
 parser.add_argument('input', type=str, help='file or directory to upload to redshift')
-parser.add_argument('--table_name', type=str, required=True, help='destination table name')
+parser.add_argument('--excel_sheet', type=str, required=True, help='path to excel sheet to be created/loaded')
+parser.add_argument('--table_name', type=str, help='destination table name')
 parser.add_argument('--schema', type=str, default=os.environ.get('DATABASE_SCHEMA'),
                     help='the schema where tables should upload to')
 parser.add_argument('--delimiter', type=str, default=',', help='delimeter to use')
@@ -76,22 +80,33 @@ aws_config = {
 
 verify_db_config(db_config)
 
-# initial error checking
-if (args.input == None):
-  raise RuntimeError("Invalid argument passed into commandline.")
+if (args.action == 'create_excel'):
+  # initial error checking
+  if (args.input == None):
+    raise RuntimeError("Invalid argument passed into commandline.")
+  else:
+    if args.excel_sheet == None:
+      raise RuntimeError("No excel sheet specified.")
+    else:
+      # Call read package function using the file path
+      col_name_list, dtype_list = read.readFromPath(args.input, args.delimiter, args.prefix)
+      write_to_spreadsheet.to_spreadsheet(col_name_list, dtype_list, args.excel_sheet)
+    
+elif (args.action == 'load_excel'):
+    names_and_types_list = read_spreadsheet_get_rs_dtypes.get_rs_dtypes(args.excel_sheet)
+    createQuery = read.getQuery(names_and_types_list, args.schema, args.table_name)
+    # Call write package run query with the create table string
+    if createQuery is None:
+      raise Error("oops")
+    if createQuery == '':
+      raise Error("oops")
+    print(createQuery)
+    createTable = write.executeSQL(createQuery, db_config)
+    # Next call write package function to upload to s3 given the filepath, return the path(s) on s3
+    uploadFiles = write.uploadToS3(args.input, args.prefix, aws_config, args.table_name)
+    # Foreach s3 path, call write package function to run a COPY statement on redshift
+    for s3Path in uploadFiles:
+      write.loadDB(s3Path, db_config, aws_config, args.table_name, args.schema, args.delimiter)
 else:
-  # Call read package function using the file path, return create table string
-  createQuery = read.readFromPath(args.input, args.delimiter, args.prefix, args.schema, args.table_name)
-  # Call write package run query with the create table string
-  if createQuery is None:
-    raise Error("oops")
-  if createQuery == '':
-    raise Error("oops")
-  print(createQuery)
-  createTable = write.executeSQL(createQuery, db_config)
-  # Next call write package function to upload to s3 given the filepath, return the path(s) on s3
-  uploadFiles = write.uploadToS3(args.input, args.prefix, aws_config, args.table_name)
-  # Foreach s3 path, call write package function to run a COPY statement on redshift
-  for s3Path in uploadFiles:
-    write.loadDB(s3Path, db_config, aws_config, args.table_name, args.schema, args.delimiter)
+  raise RuntimeError("Invalid action provided")
 
