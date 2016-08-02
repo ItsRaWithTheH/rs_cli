@@ -45,11 +45,8 @@ def _readFile(filePath, delim, guessed_encoding=None):
   with open(filePath, encoding=guessed_encoding) as infile:
     # dialect = csv.Sniffer().sniff(infile.read(1024))
     rows = csv.reader(infile, delimiter=delim)
-    print(rows)
     readData = list()
     maxRows = 500
-    # headers = next(rows)
-    # print(headers)
     for i, element in enumerate(rows):
       if i < maxRows:
         readData.append(element)
