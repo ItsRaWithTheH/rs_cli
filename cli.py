@@ -13,13 +13,9 @@ from write import write
 import write_to_spreadsheet
 import read_spreadsheet_get_rs_dtypes
 
-def find(name, path):
-  for root, dirs, files in os.walk(path):
-    if name in files:
-      return os.path.join(root, name)
 #
 # loads dotenv
-dotenv_path = '/Users/jlee/Desktop/cota/projects/metathesis/.env'
+dotenv_path = os.path.abspath('./.env')
 if os.path.exists(dotenv_path) == False:
   print('Cannot locate .env file using path --> {}'.format(dotenv_path), file=sys.stderr)
   sys.exit(1)
@@ -48,7 +44,7 @@ def verify_db_config(db_config):
 
 #access AWS credentials by reading from .env file
 parser = argparse.ArgumentParser(description='Pass data from CSV to Redshift')
-parser.add_argument('action', type=str, help='either "create_excel" or "load_excel')
+parser.add_argument('action', type=str, help='either "create_excel" or "load_excel"')
 parser.add_argument('input', type=str, help='file or directory to upload to redshift')
 parser.add_argument('--excel_sheet', type=str, required=True, help='path to excel sheet to be created/loaded')
 parser.add_argument('--table_name', type=str, help='destination table name')

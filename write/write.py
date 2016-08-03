@@ -85,6 +85,7 @@ def uploadToS3(path, prefix, aws_config, tablename):
   secret_access_key = aws_config['aws_secret_access_key']
   s3_client = boto3.client(
     's3',
+    region_name='us-east-1',
     aws_access_key_id=access_key_id,
     aws_secret_access_key=secret_access_key,
   )
