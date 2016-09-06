@@ -39,7 +39,7 @@ def readFromPath (path, delimeter, prefix):
     col_names_list = list()
     rs_dtypes_list = list()
     for i in tableDef:
-      col_names_list.append(i['name'])
+      col_names_list.append(i['name'].replace(" ", "_"))
       rs_dtypes_list.append(i['type'])
     return col_names_list, rs_dtypes_list
   else:
